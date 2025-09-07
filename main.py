@@ -15,11 +15,6 @@ collection = None
 class QueryRequest(BaseModel):
     query: str
     n_results: int = 5
-    min_rating: Optional[int] = None
-    max_rating: Optional[int] = None
-    actual_price: Optional[int] = None
-    discount_percentage: Optional[int] = None
-    discounted_price: Optional[int] = None
 
 class QueryResponse(BaseModel):
     products: List[dict]
@@ -131,51 +126,17 @@ def read_item(item_id: int, q: Union[str, None] = None):
 
 @app.post("/search", response_model=QueryResponse)
 def search_products(query_request: QueryRequest):
-    """Search for products using semantic similarity with metadata filtering"""
+    """Search for products using semantic similarity"""
     global collection
 
     if collection is None:
         raise HTTPException(status_code=500, detail="ChromaDB not initialized")
 
-    # Validate rating range
-    if query_request.min_rating is not None and (query_request.min_rating < 0 or query_request.min_rating > 5):
-        raise HTTPException(status_code=400, detail="min_rating must be between 0 and 5")
-    if query_request.max_rating is not None and (query_request.max_rating < 0 or query_request.max_rating > 5):
-        raise HTTPException(status_code=400, detail="max_rating must be between 0 and 5")
-    if query_request.min_rating is not None and query_request.max_rating is not None and query_request.min_rating > query_request.max_rating:
-        raise HTTPException(status_code=400, detail="min_rating cannot be greater than max_rating")
-
     try:
-        # Build where clause for metadata filtering
-        where_clause = {}
-        
-        # Rating filtering
-        if query_request.min_rating is not None or query_request.max_rating is not None:
-            rating_filter = {}
-            if query_request.min_rating is not None:
-                rating_filter["$gte"] = query_request.min_rating
-            if query_request.max_rating is not None:
-                rating_filter["$lte"] = query_request.max_rating
-            where_clause["rating"] = rating_filter
-        
-        # Exact match filters
-        if query_request.actual_price is not None:
-            where_clause["actual_price"] = query_request.actual_price
-        if query_request.discount_percentage is not None:
-            where_clause["discount_percentage"] = query_request.discount_percentage
-        if query_request.discounted_price is not None:
-            where_clause["discounted_price"] = query_request.discounted_price
-
-        # Query with or without filters
-        query_params = {
-            "query_texts": [query_request.query],
-            "n_results": query_request.n_results
-        }
-        
-        if where_clause:
-            query_params["where"] = where_clause
-
-        results = collection.query(**query_params)
+        results = collection.query(
+            query_texts=[query_request.query],
+            n_results=query_request.n_results
+        )
 
         products = []
         for i in range(len(results['ids'][0])):
@@ -193,25 +154,9 @@ def search_products(query_request: QueryRequest):
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
 
 @app.get("/search")
-def search_products_get(
-    q: str, 
-    n_results: int = 5,
-    min_rating: Optional[int] = None,
-    max_rating: Optional[int] = None,
-    actual_price: Optional[int] = None,
-    discount_percentage: Optional[int] = None,
-    discounted_price: Optional[int] = None
-):
-    """Search for products using GET request with optional filters"""
-    query_request = QueryRequest(
-        query=q, 
-        n_results=n_results,
-        min_rating=min_rating,
-        max_rating=max_rating,
-        actual_price=actual_price,
-        discount_percentage=discount_percentage,
-        discounted_price=discounted_price
-    )
+def search_products_get(q: str, n_results: int = 5):
+    """Search for products using GET request"""
+    query_request = QueryRequest(query=q, n_results=n_results)
     return search_products(query_request)
 
 @app.get("/collection/info")
