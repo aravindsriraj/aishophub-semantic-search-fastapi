@@ -26,7 +26,7 @@ def initialize_chroma_collection():
     if not os.getenv("OPENAI_API_KEY"):
         raise ValueError("OPENAI_API_KEY environment variable not set")
 
-    client = chromadb.EphemeralClient()
+    client = chromadb.PersistentClient()
 
     try:
         # Try to get existing collection
