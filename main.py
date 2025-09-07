@@ -14,6 +14,7 @@ collection = None
 
 class QueryRequest(BaseModel):
     query: str
+    full_text_search: str
     n_results: int = 5
 
 class QueryResponse(BaseModel):
@@ -135,7 +136,8 @@ def search_products(query_request: QueryRequest):
     try:
         results = collection.query(
             query_texts=[query_request.query],
-            n_results=query_request.n_results
+            n_results=query_request.n_results,
+            where_document={"$contains": query_request.full_text_search}
         )
 
         products = []
@@ -154,9 +156,9 @@ def search_products(query_request: QueryRequest):
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
 
 @app.get("/search")
-def search_products_get(q: str, n_results: int = 5):
+def search_products_get(q: str, full_text_search: str, n_results: int = 5):
     """Search for products using GET request"""
-    query_request = QueryRequest(query=q, n_results=n_results)
+    query_request = QueryRequest(query=q, n_results=n_results, full_text_search=full_text_search)
     return search_products(query_request)
 
 @app.get("/collection/info")
