@@ -68,15 +68,21 @@ def initialize_chroma_collection():
                 'product_link': str(row['product_link'])
             }
 
-            # Add rating (random if null)
+            # Add rating (random if null) - as integer
             if pd.notna(row['rating']):
-                metadata['rating'] = float(row['rating'])
+                metadata['rating'] = int(float(row['rating']))  # Convert to float first, then to int
             else:
-                metadata['rating'] = round(random.uniform(1.0, 5.0), 1)
+                metadata['rating'] = random.randint(1, 5)
 
-            # Add rating_count (random if null)
+            # Add rating_count (random if null) - as integer
             if pd.notna(row.get('rating_count')):
-                metadata['rating_count'] = int(row['rating_count'])
+                # Remove commas and convert to int
+                rating_count_str = str(row['rating_count']).replace(',', '')
+                try:
+                    metadata['rating_count'] = int(rating_count_str)
+                except ValueError:
+                    # If conversion fails, use a random value
+                    metadata['rating_count'] = random.randint(1, 1000)
             else:
                 metadata['rating_count'] = random.randint(1, 1000)
 
