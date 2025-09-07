@@ -12,6 +12,7 @@ chromadb = "^1.0.20"
 pandas = "^2.3.2"
 python-dotenv = "^1.1.1"
 pydantic = "^2.11.7"
+openai = "^1.106.1"
 
 [tool.pyright]
 # https://github.com/microsoft/pyright/blob/main/docs/configuration.md
