@@ -20,15 +20,15 @@ collection = None
 
 class QueryRequest(BaseModel):
     query: str
-    n_results: int = 5
-    where: Optional[dict] = None
+    n_results: int = 20
 
 
 class QueryResponse(BaseModel):
     products: List[dict]
 
 
-def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+def verify_token(
+        credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Verify the Bearer token"""
     if credentials.credentials != BEARER_TOKEN:
         raise HTTPException(
@@ -156,7 +156,8 @@ def read_item(item_id: int, q: Union[str, None] = None):
 
 
 @app.post("/search", response_model=QueryResponse)
-def search_products(query_request: QueryRequest, token: str = Depends(verify_token)):
+def search_products(query_request: QueryRequest,
+                    token: str = Depends(verify_token)):
     """Search for products using semantic similarity with metadata filtering"""
     global collection
 
