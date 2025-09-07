@@ -60,10 +60,15 @@ def initialize_chroma_collection():
             ids.append(str(row['id']))
             documents.append(row['TEXT'])
 
+            # Clean and convert price fields to integers
+            discounted_price = str(row['discounted_price']).replace('₹', '').replace(',', '').strip()
+            actual_price = str(row['actual_price']).replace('₹', '').replace(',', '').strip()
+            discount_percentage = str(row['discount_percentage']).replace('%', '').strip()
+            
             metadata = {
-                'discounted_price': str(row['discounted_price']),
-                'actual_price': str(row['actual_price']),
-                'discount_percentage': str(row['discount_percentage']),
+                'discounted_price': int(float(discounted_price)) if discounted_price and discounted_price != 'nan' else 0,
+                'actual_price': int(float(actual_price)) if actual_price and actual_price != 'nan' else 0,
+                'discount_percentage': int(float(discount_percentage)) if discount_percentage and discount_percentage != 'nan' else 0,
                 'img_link': str(row['img_link']),
                 'product_link': str(row['product_link'])
             }
