@@ -202,7 +202,7 @@ def search_products(query_request: QueryRequest, token: str = Depends(verify_tok
 
 @app.get("/search")
 def search_products_get(q: str,
-                        full_text_search: str,
+                        full_text_search: Optional[str] = None,
                         n_results: int = 5,
                         where: Optional[str] = None,
                         token: str = Depends(verify_token)):
@@ -221,7 +221,49 @@ def search_products_get(q: str,
                                  full_text_search=full_text_search,
                                  n_results=n_results,
                                  where=where_dict)
-    return search_products(query_request)
+
+    # Call search_products directly without passing token again
+    global collection
+    if collection is None:
+        raise HTTPException(status_code=500, detail="ChromaDB not initialized")
+
+    try:
+        # Build query parameters
+        query_params = {
+            "query_texts": [query_request.query],
+            "n_results": query_request.n_results
+        }
+
+        # Add full text search if provided
+        if query_request.full_text_search:
+            query_params["where_document"] = {
+                "$contains": query_request.full_text_search
+            }
+
+        # Add metadata filtering if provided
+        if query_request.where:
+            query_params["where"] = query_request.where
+
+        results = collection.query(**query_params)
+
+        products = []
+        for i in range(len(results['ids'][0])):
+            product = {
+                'id':
+                results['ids'][0][i],
+                'text':
+                results['documents'][0][i],
+                'metadata':
+                results['metadatas'][0][i],
+                'distance':
+                results['distances'][0][i] if 'distances' in results else None
+            }
+            products.append(product)
+
+        return QueryResponse(products=products)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
 
 
 @app.get("/collection/info")
