@@ -20,7 +20,6 @@ collection = None
 
 class QueryRequest(BaseModel):
     query: str
-    full_text_search: Optional[str]
     n_results: int = 5
     where: Optional[dict] = None
 
@@ -168,10 +167,7 @@ def search_products(query_request: QueryRequest, token: str = Depends(verify_tok
         # Build query parameters
         query_params = {
             "query_texts": [query_request.query],
-            "n_results": query_request.n_results,
-            "where_document": {
-                "$contains": query_request.full_text_search
-            }
+            "n_results": query_request.n_results
         }
 
         # Add metadata filtering if provided
@@ -202,7 +198,6 @@ def search_products(query_request: QueryRequest, token: str = Depends(verify_tok
 
 @app.get("/search")
 def search_products_get(q: str,
-                        full_text_search: Optional[str] = None,
                         n_results: int = 5,
                         where: Optional[str] = None,
                         token: str = Depends(verify_token)):
@@ -218,7 +213,6 @@ def search_products_get(q: str,
                 detail="Invalid JSON format for 'where' parameter")
 
     query_request = QueryRequest(query=q,
-                                 full_text_search=full_text_search,
                                  n_results=n_results,
                                  where=where_dict)
 
@@ -233,12 +227,6 @@ def search_products_get(q: str,
             "query_texts": [query_request.query],
             "n_results": query_request.n_results
         }
-
-        # Add full text search if provided
-        if query_request.full_text_search:
-            query_params["where_document"] = {
-                "$contains": query_request.full_text_search
-            }
 
         # Add metadata filtering if provided
         if query_request.where:
