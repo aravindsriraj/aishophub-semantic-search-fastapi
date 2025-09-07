@@ -3,21 +3,16 @@ import os
 import pandas as pd
 import chromadb
 from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 import random
-from fastapi.security import HTTPBearer
-import secrets
 
 app = FastAPI()
 
 # Authentication configuration
 BEARER_TOKEN = "*ULXrUUDkkjRheg3cjpQAcBbzGgffZBn!32ssr8JRW9VERcVmweQqGnYi!Y8jcPnG"
 security = HTTPBearer()
-
-# Print the token on startup for testing
-print(f"Bearer Token: {BEARER_TOKEN}")
-
 
 # Global variable to store the collection
 collection = None
@@ -32,6 +27,17 @@ class QueryRequest(BaseModel):
 
 class QueryResponse(BaseModel):
     products: List[dict]
+
+
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Verify the Bearer token"""
+    if credentials.credentials != BEARER_TOKEN:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return credentials.credentials
 
 
 def initialize_chroma_collection():
@@ -151,7 +157,7 @@ def read_item(item_id: int, q: Union[str, None] = None):
 
 
 @app.post("/search", response_model=QueryResponse)
-def search_products(query_request: QueryRequest):
+def search_products(query_request: QueryRequest, token: str = Depends(verify_token)):
     """Search for products using semantic similarity with metadata filtering"""
     global collection
 
@@ -198,7 +204,8 @@ def search_products(query_request: QueryRequest):
 def search_products_get(q: str,
                         full_text_search: str,
                         n_results: int = 5,
-                        where: Optional[str] = None):
+                        where: Optional[str] = None,
+                        token: str = Depends(verify_token)):
     """Search for products using GET request"""
     where_dict = None
     if where:
@@ -218,7 +225,7 @@ def search_products_get(q: str,
 
 
 @app.get("/collection/info")
-def get_collection_info():
+def get_collection_info(token: str = Depends(verify_token)):
     """Get information about the ChromaDB collection"""
     global collection
 
