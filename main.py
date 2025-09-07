@@ -6,8 +6,18 @@ from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import random
+from fastapi.security import HTTPBearer
+import secrets
 
 app = FastAPI()
+
+# Authentication configuration
+BEARER_TOKEN = "*ULXrUUDkkjRheg3cjpQAcBbzGgffZBn!32ssr8JRW9VERcVmweQqGnYi!Y8jcPnG"
+security = HTTPBearer()
+
+# Print the token on startup for testing
+print(f"Bearer Token: {BEARER_TOKEN}")
+
 
 # Global variable to store the collection
 collection = None
