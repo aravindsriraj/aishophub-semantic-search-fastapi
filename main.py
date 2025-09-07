@@ -16,6 +16,7 @@ class QueryRequest(BaseModel):
     query: str
     full_text_search: str
     n_results: int = 5
+    where: Optional[dict] = None
 
 class QueryResponse(BaseModel):
     products: List[dict]
@@ -127,18 +128,25 @@ def read_item(item_id: int, q: Union[str, None] = None):
 
 @app.post("/search", response_model=QueryResponse)
 def search_products(query_request: QueryRequest):
-    """Search for products using semantic similarity"""
+    """Search for products using semantic similarity with metadata filtering"""
     global collection
 
     if collection is None:
         raise HTTPException(status_code=500, detail="ChromaDB not initialized")
 
     try:
-        results = collection.query(
-            query_texts=[query_request.query],
-            n_results=query_request.n_results,
-            where_document={"$contains": query_request.full_text_search}
-        )
+        # Build query parameters
+        query_params = {
+            "query_texts": [query_request.query],
+            "n_results": query_request.n_results,
+            "where_document": {"$contains": query_request.full_text_search}
+        }
+        
+        # Add metadata filtering if provided
+        if query_request.where:
+            query_params["where"] = query_request.where
+
+        results = collection.query(**query_params)
 
         products = []
         for i in range(len(results['ids'][0])):
@@ -156,9 +164,17 @@ def search_products(query_request: QueryRequest):
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
 
 @app.get("/search")
-def search_products_get(q: str, full_text_search: str, n_results: int = 5):
+def search_products_get(q: str, full_text_search: str, n_results: int = 5, where: Optional[str] = None):
     """Search for products using GET request"""
-    query_request = QueryRequest(query=q, n_results=n_results, full_text_search=full_text_search)
+    where_dict = None
+    if where:
+        try:
+            import json
+            where_dict = json.loads(where)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="Invalid JSON format for 'where' parameter")
+    
+    query_request = QueryRequest(query=q, full_text_search=full_text_search, n_results=n_results, where=where_dict)
     return search_products(query_request)
 
 @app.get("/collection/info")
