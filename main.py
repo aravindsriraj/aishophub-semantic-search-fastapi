@@ -170,10 +170,6 @@ def search_products(query_request: QueryRequest, token: str = Depends(verify_tok
             "n_results": query_request.n_results
         }
 
-        # Add metadata filtering if provided
-        if query_request.where:
-            query_params["where"] = query_request.where
-
         results = collection.query(**query_params)
 
         products = []
@@ -227,10 +223,6 @@ def search_products_get(q: str,
             "query_texts": [query_request.query],
             "n_results": query_request.n_results
         }
-
-        # Add metadata filtering if provided
-        if query_request.where:
-            query_params["where"] = query_request.where
 
         results = collection.query(**query_params)
 
