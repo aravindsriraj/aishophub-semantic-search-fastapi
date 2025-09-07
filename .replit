@@ -5,7 +5,7 @@ hidden = [".pythonlibs"]
 
 [nix]
 channel = "stable-24_05"
-packages = ["glibcLocales"]
+packages = ["glibcLocales", "libxcrypt"]
 
 [deployment]
 run = ["uvicorn", "main:app", "--host", "0.0.0.0"]
@@ -17,3 +17,15 @@ externalPort = 80
 
 [agent]
 expertMode = true
+
+[workflows]
+runButton = "Run"
+
+[[workflows.workflow]]
+name = "Run"
+author = 36982398
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "uvicorn main:app --host 0.0.0.0 --reload"
